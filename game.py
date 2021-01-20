@@ -1,5 +1,16 @@
 import pygame
+import random
 FAKE_GRAVITY = 100
+BRICK_SPAWN_INTERVAL = 2000 # ms
+brick_spawn_counter = 2000
+
+
+def attempt_brick_spawn(t):
+    global brick_spawn_counter
+    brick_spawn_counter += t
+    if brick_spawn_counter > BRICK_SPAWN_INTERVAL:
+        brick_spawn_counter %= 100
+        bricks.add(Brick(random.randrange(1, 1401), 0))
 
 
 class Brick(pygame.sprite.Sprite):
@@ -90,6 +101,7 @@ while running:
     if pygame.key.get_pressed()[pygame.K_a]:
         player.move(-1)
     bricks.update()
+    attempt_brick_spawn(t)
     player.update(t / 1000)
     screen.fill('black')
     pg.draw(screen)
