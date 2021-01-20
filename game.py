@@ -45,6 +45,12 @@ class Player(pygame.sprite.Sprite):
             self.velocity = 500
         self.slow_down = False
 
+    def check_collision(self):
+        if pygame.sprite.spritecollideany(self, bricks):
+            print('game over')
+            global running
+            running = False
+
     def update(self, time) -> None:
         if self.slow_down:
             self.velocity -= time * 1500
@@ -59,6 +65,7 @@ class Player(pygame.sprite.Sprite):
             self.velocity = 0
         self.rect.x = int(self.x)
         self.slow_down = True
+        self.check_collision()
 
 
 pygame.init()
