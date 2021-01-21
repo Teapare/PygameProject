@@ -1,20 +1,20 @@
 import pygame
 import random
-FAKE_GRAVITY = 100
-BRICK_SPAWN_INTERVAL = 2000 # ms
-brick_spawn_counter = 2000
+FAKE_GRAVITY = 200  # px/sec
+BRICK_SPAWN_INTERVAL = 3000  # ms
+brick_spawn_counter = 2000  # ms
 
 
-def attempt_brick_spawn(t):
+def attempt_obstacle_spawn(t):
     global brick_spawn_counter
     brick_spawn_counter += t
     if brick_spawn_counter > BRICK_SPAWN_INTERVAL:
         brick_spawn_counter %= 100
-        bricks.add(Brick(random.randrange(1, 1401), 0))
+        Obstacle(random.randrange(1, 1401), -124)
 
 
 class Brick(pygame.sprite.Sprite):
-    image = pygame.image.load('Images/BrickLongRound.png')
+    image = pygame.image.load('Images/VeryLongBrick.png')
 
     def __init__(self, x, y):
         super(Brick, self).__init__(bricks)
@@ -30,6 +30,12 @@ class Brick(pygame.sprite.Sprite):
         if self.y > 900:
             self.kill()
         self.rect.y = self.y
+
+
+class Obstacle:
+    def __init__(self, x, y):
+        self.left_brick = Brick(x - 1366, y)
+        self.right_brick = Brick(x + 400, y)
 
 
 class Player(pygame.sprite.Sprite):
@@ -52,8 +58,8 @@ class Player(pygame.sprite.Sprite):
             self.velocity *= -1
             self.orientation *= -1
             self.image = pygame.transform.flip(self.image, True, False)
-        if self.velocity > 500:
-            self.velocity = 500
+        if self.velocity > 800:
+            self.velocity = 800
         self.slow_down = False
 
     def check_collision(self):
@@ -64,7 +70,7 @@ class Player(pygame.sprite.Sprite):
 
     def update(self, time) -> None:
         if self.slow_down:
-            self.velocity -= time * 1500
+            self.velocity -= time * 2400
             if self.velocity < 0:
                 self.velocity = 0
         self.x += time * self.velocity * self.orientation
@@ -94,14 +100,14 @@ while running:
             running = False
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
-                Brick(*event.pos)
+                Obstacle(*event.pos)
     t = timer.tick(fps)
     if pygame.key.get_pressed()[pygame.K_d]:
         player.move(1)
     if pygame.key.get_pressed()[pygame.K_a]:
         player.move(-1)
     bricks.update()
-    attempt_brick_spawn(t)
+    attempt_obstacle_spawn(t)
     player.update(t / 1000)
     screen.fill('black')
     pg.draw(screen)
