@@ -1,5 +1,6 @@
 import pygame
 import random
+
 FAKE_GRAVITY = 200  # px/sec
 BRICK_SPAWN_INTERVAL = 3000  # ms
 brick_spawn_counter = 2000  # ms
@@ -64,7 +65,7 @@ class Player(pygame.sprite.Sprite):
 
     def check_collision(self):
         if pygame.sprite.spritecollideany(self, bricks):
-            print('game over')
+            print('game over. You got {} points.'.format(int(score)))
             global running
             running = False
 
@@ -86,6 +87,8 @@ class Player(pygame.sprite.Sprite):
 
 
 pygame.init()
+font = pygame.font.SysFont('comic sans', 17)
+score = 0
 screen = pygame.display.set_mode((1600, 900))
 player = Player()
 pg = pygame.sprite.Group(player)
@@ -107,9 +110,13 @@ while running:
     if pygame.key.get_pressed()[pygame.K_a]:
         player.move(-1)
     bricks.update()
+    score += t / 100
     attempt_obstacle_spawn(t)
     player.update(t / 1000)
+    score_display = pygame.transform.scale(font.render(str(int(score)), 0, pygame.color.Color('white')),
+                                           (67 * len(str(int(score))), 120))
     screen.fill('black')
+    screen.blit(score_display, (screen.get_width() - score_display.get_width(), 0))
     pg.draw(screen)
     bricks.draw(screen)
     pygame.display.flip()
