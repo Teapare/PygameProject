@@ -11,14 +11,21 @@ def attempt_obstacle_spawn(t):
     brick_spawn_counter += t
     if brick_spawn_counter > BRICK_SPAWN_INTERVAL:
         brick_spawn_counter %= 100
-        Obstacle(random.randrange(1, 1401), -124)
+        Obstacle(screen.get_width())
 
 
 class Brick(pygame.sprite.Sprite):
-    image = pygame.image.load('Images/VeryLongBrick.png')
+    image = pygame.image.load('Images/BrickLongRound.png')
 
-    def __init__(self, x, y):
-        super(Brick, self).__init__(bricks)
+    def __init__(self, x, y, impassable=True, group:pygame.sprite.Group=None):
+        if impassable:
+            super(Brick, self).__init__(bricks)
+        else:
+            super(Brick, self).__init__(p_bricks)
+            self.image = pygame.image.load('Images/BrickLongRound.png')
+            self.image.blit(pygame.transform.scale(pygame.font.SysFont('comic sans', 20).render('YEP', True, pygame.color.Color('white')), (251, 124)), (0, 0))
+        if group:
+            group.add(self)
         self.x = x
         self.y = y
         self.rect = self.image.get_rect()
@@ -34,15 +41,28 @@ class Brick(pygame.sprite.Sprite):
 
 
 class Obstacle:
-    def __init__(self, x, y):
-        self.left_brick = Brick(x - 1366, y)
-        self.right_brick = Brick(x + 400, y)
+    def __init__(self, screen_width, right_bricks=1):
+        bricks_ = screen_width // 251 + 1
+        leftovers = screen_width % 251
+        self.bricks = []
+        self.group = pygame.sprite.Group()
+        for brick in range(bricks_):
+            if right_bricks > 0 and random.choice([0, 1]) == 1:
+                print("YES")
+                self.bricks.append(Brick(brick * 251 - leftovers // 2, -124, False, self.group))
+                right_bricks -= 1
+            else:
+                if right_bricks > 0 and brick == bricks_ - 1:
+                    print("YER")
+                    self.bricks.append(Brick(brick * 251 - leftovers // 2, -124, False, group=self.group))
+                else:
+                    self.bricks.append(Brick(brick * 251 - leftovers // 2, -124, group=self.group))
 
 
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super(Player, self).__init__()
-        self.image = pygame.image.load('Images/YEP_Emote_Banner.png')
+        self.image = pygame.image.load('Images/OMEGALUL.jpg')
         self.image = pygame.transform.scale(self.image, (100, 200))
         self.rect = self.image.get_rect()
         self.rect.x = 0
@@ -94,8 +114,9 @@ player = Player()
 pg = pygame.sprite.Group(player)
 running = True
 bricks = pygame.sprite.Group()
+p_bricks = pygame.sprite.Group()
 fps = 100
-i = pygame.image.load('Images/YEP_Emote_Banner.png')
+i = pygame.image.load('Images/OMEGALUL.jpg')
 timer = pygame.time.Clock()
 while running:
     for event in pygame.event.get():
@@ -110,6 +131,7 @@ while running:
     if pygame.key.get_pressed()[pygame.K_a]:
         player.move(-1)
     bricks.update()
+    p_bricks.update()
     score += t / 100
     attempt_obstacle_spawn(t)
     player.update(t / 1000)
@@ -119,4 +141,5 @@ while running:
     screen.blit(score_display, (screen.get_width() - score_display.get_width(), 0))
     pg.draw(screen)
     bricks.draw(screen)
+    p_bricks.draw(screen)
     pygame.display.flip()
