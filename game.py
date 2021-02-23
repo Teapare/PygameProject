@@ -1,23 +1,24 @@
 import pygame
+import sys
 import random
 
-FAKE_GRAVITY = 200  # px/sec
-BRICK_SPAWN_INTERVAL = 3000  # ms
-brick_spawn_counter = 2000  # ms
+FAKE_GRAVITY = 300  # px/sec
+BRICK_SPAWN_INTERVAL = 4000  # ms
+brick_spawn_counter = 3000  # ms
 
 
 def attempt_obstacle_spawn(t):
     global brick_spawn_counter
     brick_spawn_counter += t
     if brick_spawn_counter > BRICK_SPAWN_INTERVAL:
-        brick_spawn_counter %= 100
+        brick_spawn_counter %= BRICK_SPAWN_INTERVAL
         Obstacle(screen.get_width())
 
 
 class Brick(pygame.sprite.Sprite):
     image = pygame.image.load('Images/BrickLongRound.png')
 
-    def __init__(self, x, y, impassable=True, group:pygame.sprite.Group=None):
+    def __init__(self, x, y, impassable=True, group:pygame.sprite.Group = None):
         if impassable:
             super(Brick, self).__init__(bricks)
         else:
@@ -41,13 +42,15 @@ class Brick(pygame.sprite.Sprite):
 
 
 class Obstacle:
-    def __init__(self, screen_width, right_bricks=1):
+    def __init__(self, screen_width, right_bricks=1, question=None, answers=None):
         bricks_ = screen_width // 251 + 1
         leftovers = screen_width % 251
         self.bricks = []
         self.group = pygame.sprite.Group()
+        right = list(range(bricks_))
+        right = [right.pop(random.randrange(len(right))) for i in range(right_bricks)]
         for brick in range(bricks_):
-            if right_bricks > 0 and random.choice([0, 1]) == 1:
+            if right_bricks > 0 and brick in right:
                 print("YES")
                 self.bricks.append(Brick(brick * 251 - leftovers // 2, -124, False, self.group))
                 right_bricks -= 1
@@ -62,12 +65,12 @@ class Obstacle:
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super(Player, self).__init__()
-        self.image = pygame.image.load('Images/OMEGALUL.jpg')
+        self.image = pygame.image.load('Images/OMEGALULL.jpg')
         self.image = pygame.transform.scale(self.image, (100, 200))
         self.rect = self.image.get_rect()
-        self.rect.x = 0
+        self.rect.x = screen.get_width() // 2 - self.rect.width // 2
         self.rect.y = 700
-        self.x = 0
+        self.x = self.rect.x
         self.orientation = 1
         self.velocity = 0
         self.v = 0
@@ -108,38 +111,44 @@ class Player(pygame.sprite.Sprite):
 
 pygame.init()
 font = pygame.font.SysFont('comic sans', 17)
-score = 0
-screen = pygame.display.set_mode((1600, 900))
+screen = pygame.display.set_mode((1600, 900), pygame.FULLSCREEN)
 player = Player()
-pg = pygame.sprite.Group(player)
-running = True
+fps = 100
 bricks = pygame.sprite.Group()
 p_bricks = pygame.sprite.Group()
-fps = 100
-i = pygame.image.load('Images/OMEGALUL.jpg')
-timer = pygame.time.Clock()
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1:
-                Obstacle(*event.pos)
-    t = timer.tick(fps)
-    if pygame.key.get_pressed()[pygame.K_d]:
-        player.move(1)
-    if pygame.key.get_pressed()[pygame.K_a]:
-        player.move(-1)
-    bricks.update()
-    p_bricks.update()
-    score += t / 100
-    attempt_obstacle_spawn(t)
-    player.update(t / 1000)
-    score_display = pygame.transform.scale(font.render(str(int(score)), 0, pygame.color.Color('white')),
-                                           (67 * len(str(int(score))), 120))
-    screen.fill('black')
-    screen.blit(score_display, (screen.get_width() - score_display.get_width(), 0))
-    pg.draw(screen)
-    bricks.draw(screen)
-    p_bricks.draw(screen)
-    pygame.display.flip()
+i = pygame.image.load('Images/OMEGALULL.jpg')
+pg = pygame.sprite.Group(player)
+while True:
+    score = 0
+    running = True
+    player.x = screen.get_width() // 2 - player.image.get_width() // 2
+    timer = pygame.time.Clock()
+    bricks.remove(*bricks.sprites())
+    p_bricks.remove(*p_bricks.sprites())
+    brick_spawn_counter = 0
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    Obstacle(*event.pos)
+        t = timer.tick(fps)
+        if pygame.key.get_pressed()[pygame.K_d]:
+            player.move(1)
+        if pygame.key.get_pressed()[pygame.K_a]:
+            player.move(-1)
+        bricks.update()
+        p_bricks.update()
+        score += t / 100
+        attempt_obstacle_spawn(t)
+        player.update(t / 1000)
+        score_display = pygame.transform.scale(font.render(str(int(score)), 0, pygame.color.Color('white')),
+                                               (67 * len(str(int(score))), 120))
+        screen.fill('black')
+        screen.blit(score_display, (screen.get_width() - score_display.get_width(), 0))
+        pg.draw(screen)
+        bricks.draw(screen)
+        p_bricks.draw(screen)
+        pygame.display.flip()
