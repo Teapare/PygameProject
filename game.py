@@ -5,6 +5,10 @@ import random
 FAKE_GRAVITY = 300  # px/sec
 BRICK_SPAWN_INTERVAL = 4000  # ms
 brick_spawn_counter = 3000  # ms
+char_idle_animation = list(map(lambda x: pygame.image.load('Images/CharIdleAnimation.png').subsurface(*x),
+                          [(0, 0, 646, 789), (803, 0, 657, 789), (0, 0, 646, 789)]))
+char_running_animation = list(map(lambda x: pygame.image.load('Images/CharRunningAnimation.png').subsurface(*x),
+                                  [(0, 0, 815, 789), (864, 0, 520, 789), (1379, 0, 691, 789)]))
 
 
 def attempt_obstacle_spawn(t):
@@ -65,8 +69,11 @@ class Obstacle:
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super(Player, self).__init__()
-        self.image = pygame.image.load('Images/OMEGALULL.jpg')
-        self.image = pygame.transform.scale(self.image, (100, 200))
+        self.image = char_idle_animation[0]
+        self.idle_index = 0
+        self.moving_index = 0
+        self.image = pygame.transform.scale(self.image, (self.image.get_width() * 200 // self.image.get_height(), 200))
+        self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
         self.rect.x = screen.get_width() // 2 - self.rect.width // 2
         self.rect.y = 700
@@ -75,6 +82,35 @@ class Player(pygame.sprite.Sprite):
         self.velocity = 0
         self.v = 0
         self.slow_down = True
+        self.idle_frame_counter = 0
+        self.moving_frame_counter = 0
+
+    def next_frame(self, time, distance):
+        self.idle_frame_counter += time
+        self.moving_frame_counter += distance
+        if self.velocity == 0:
+            self.moving_index = -1
+            self.moving_frame_counter = 100
+            if self.idle_frame_counter < 500:
+                return None
+            self.idle_frame_counter %= 500
+            self.idle_index = (self.idle_index + 1) % 3
+            self.image = char_idle_animation[self.idle_index]
+        else:
+            self.idle_index = -1
+            self.idle_frame_counter = 500
+            if self.moving_frame_counter < 150:
+                return None
+            self.moving_frame_counter %= 150
+            self.moving_index = (self.moving_index + 1 ) % 3
+            self.image = char_running_animation[self.moving_index]
+        self.image = pygame.transform.scale(self.image, (self.image.get_width() * 200 // self.image.get_height(), 200))
+        if self.orientation < 0:
+            self.image = pygame.transform.flip(self.image, True, False)
+        self.mask = pygame.mask.from_surface(self.image)
+        self.rect = self.image.get_rect()
+        self.rect.x = self.x
+        self.rect.y = 700
 
     def move(self, direction):
         self.velocity += direction * self.orientation * t / 1000 * 3000
@@ -87,10 +123,11 @@ class Player(pygame.sprite.Sprite):
         self.slow_down = False
 
     def check_collision(self):
-        if pygame.sprite.spritecollideany(self, bricks):
-            print('game over. You got {} points.'.format(int(score)))
-            global running
-            running = False
+        for sprite in bricks.sprites():
+            if pygame.sprite.collide_mask(self, sprite):
+                print('game over. You got {} points.'.format(int(score)))
+                global running
+                running = False
 
     def update(self, time) -> None:
         if self.slow_down:
@@ -101,12 +138,13 @@ class Player(pygame.sprite.Sprite):
         if self.x < 0:
             self.x = 0
             self.velocity = 0
-        if self.x > 1500:
-            self.x = 1500
+        if self.x > screen.get_width() - self.rect.width:
+            self.x = screen.get_width() - self.rect.width
             self.velocity = 0
         self.rect.x = int(self.x)
         self.slow_down = True
         self.check_collision()
+        self.next_frame(time * 1000, abs(time * self.velocity * self.orientation))
 
 
 pygame.init()
@@ -125,7 +163,7 @@ while True:
     timer = pygame.time.Clock()
     bricks.remove(*bricks.sprites())
     p_bricks.remove(*p_bricks.sprites())
-    brick_spawn_counter = 0
+    brick_spawn_counter = 3000
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -133,7 +171,7 @@ while True:
                 sys.exit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:
-                    Obstacle(*event.pos)
+                    Obstacle(screen.get_width())
         t = timer.tick(fps)
         if pygame.key.get_pressed()[pygame.K_d]:
             player.move(1)
@@ -142,11 +180,11 @@ while True:
         bricks.update()
         p_bricks.update()
         score += t / 100
-        attempt_obstacle_spawn(t)
+        # attempt_obstacle_spawn(t)
         player.update(t / 1000)
         score_display = pygame.transform.scale(font.render(str(int(score)), 0, pygame.color.Color('white')),
                                                (67 * len(str(int(score))), 120))
-        screen.fill('black')
+        screen.fill('white')
         screen.blit(score_display, (screen.get_width() - score_display.get_width(), 0))
         pg.draw(screen)
         bricks.draw(screen)
