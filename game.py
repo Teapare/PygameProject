@@ -44,7 +44,14 @@ def pause_get_click(pos):
 
 
 def difficulty(score):
-    if 0 <= score <= 500:
+    if score < 100:
+        answer = random.randrange(2, 20)
+        y = random.randrange(-answer, answer)
+        x = answer - y
+        question_ = "{} + {} =" if y >= 0 else "{} - {} ="
+        question_ = question_.format(abs(x), abs(y))
+        return playground, 1, 1, [str(answer)], [str(random.randrange(2, 20))], question_
+    if 100 <= score <= 500:
         answer = random.randrange(2, 100)
         y = random.randrange(-answer + 1, answer)
         x = answer - y
@@ -58,7 +65,7 @@ def difficulty(score):
         question_ = "{} + {} =" if y >= 0 else "{} - {} ="
         question_ = question_.format(abs(x), abs(y))
         return playground, 1, 2, [str(answer)], \
-               [str(random.randrange(answer - 300, min(answer + 300, 1000)) for i in range(2))], question_
+               [str(random.randrange(answer - 300, min(answer + 300, 1000))) for i in range(2)], question_
     if score >= 1000:
         answer = random.randrange(100, 2000)
         y = random.randrange(-answer + 1, answer)
@@ -85,13 +92,24 @@ class Brick(pygame.sprite.Sprite):
             super(Brick, self).__init__(bricks)
             self.image = pygame.image.load('Images/BrickLongRound.png')
             if p_text:
-                self.image.blit(pygame.transform.scale(pygame.font.SysFont(
-                    'comic sans', 20).render(p_text, True, pygame.color.Color('white')), (200, 124)), (0, 0))
+                text = pygame.font.SysFont('comic sans', 200).render(p_text, True, pygame.color.Color('white'))
+                text = pygame.transform.scale(text, (min(text.get_size(),
+                                                         (self.image.get_width(),
+                                                          text.get_height() * self.image.get_width()
+                                                          // text.get_width()), key=lambda size: size[0])))
+                # self.image.blit(pygame.transform.scale(text, (200, 124)), (0, 0))
+                self.image.blit(text, ((self.image.get_width() - text.get_width()) // 2,
+                                       (self.image.get_height() - text.get_height()) // 2))
         else:
             super(Brick, self).__init__(p_bricks)
             self.image = pygame.image.load('Images/BrickLongRound.png')
-            self.image.blit(pygame.transform.scale(pygame.font.SysFont(
-                'comic sans', 20).render(p_text, True, pygame.color.Color('white')), (200, 124)), (0, 0))
+            text = pygame.font.SysFont('comic sans', 200).render(p_text, True, pygame.color.Color('white'))
+            text = pygame.transform.scale(text, (min(text.get_size(),
+                                                     (self.image.get_width(),
+                                                      text.get_height() * self.image.get_width()
+                                                      // text.get_width()), key=lambda size: size[0])))
+            self.image.blit(text, ((self.image.get_width() - text.get_width()) // 2,
+                                   (self.image.get_height() - text.get_height()) // 2))
         if group:
             group.add(self)
         self.x = x
