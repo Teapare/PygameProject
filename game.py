@@ -20,7 +20,7 @@ char_running_animation = list(map(lambda x: (pygame.image.load('Images/CharRunni
                                    (1379, 0, 691, 769, 691 * 150 // 769, 150)]))
 pause_btn = list(map(lambda im: pygame.transform.scale(im, (150, 150)),
                      (pygame.image.load('Images/pause.png'), pygame.image.load('Images/unpause.png'))))
-pause_btn = {True: pause_btn[1], False:pause_btn[0]}
+pause_btn = {True: pause_btn[1], False: pause_btn[0]}
 
 
 def pg_get_click(pos):
@@ -43,12 +43,38 @@ def pause_get_click(pos):
     return True
 
 
+def difficulty(score):
+    if 0 <= score <= 500:
+        answer = random.randrange(2, 100)
+        y = random.randrange(-answer + 1, answer)
+        x = answer - y
+        question_ = "{} + {} =" if y >= 0 else "{} - {} ="
+        question_ = question_.format(abs(x), abs(y))
+        return playground, 1, 1, [str(answer)], [str(random.randrange(2, 100))], question_
+    if 500 < score < 1000:
+        answer = random.randrange(100, 1000)
+        y = random.randrange(-answer + 1, answer)
+        x = answer - y
+        question_ = "{} + {} =" if y >= 0 else "{} - {} ="
+        question_ = question_.format(abs(x), abs(y))
+        return playground, 1, 2, [str(answer)], \
+               [str(random.randrange(answer - 300, min(answer + 300, 1000)) for i in range(2))], question_
+    if score >= 1000:
+        answer = random.randrange(100, 2000)
+        y = random.randrange(-answer + 1, answer)
+        x = answer - y
+        question_ = "{} + {} =" if y >= 0 else "{} - {} ="
+        question_ = question_.format(abs(x), abs(y))
+        return playground, 1, 3, [str(answer)], \
+               [str(random.randrange(answer - 200, min(answer + 200), 2000)) for i in range(3)], question_
+
+
 def attempt_obstacle_spawn(t):
     global brick_spawn_counter
     brick_spawn_counter += t
     if brick_spawn_counter > BRICK_SPAWN_INTERVAL:
         brick_spawn_counter %= BRICK_SPAWN_INTERVAL
-        Obstacle(playground, 1, 3, ["YEP"], ['DAWN', 'DAWG', 'REEEE'], _question="hello")
+        Obstacle(*difficulty(score))
 
 
 class Brick(pygame.sprite.Sprite):
@@ -58,8 +84,9 @@ class Brick(pygame.sprite.Sprite):
         if not passable:
             super(Brick, self).__init__(bricks)
             self.image = pygame.image.load('Images/BrickLongRound.png')
-            self.image.blit(pygame.transform.scale(pygame.font.SysFont(
-                'comic sans', 20).render(p_text, True, pygame.color.Color('white')), (200, 124)), (0, 0))
+            if p_text:
+                self.image.blit(pygame.transform.scale(pygame.font.SysFont(
+                    'comic sans', 20).render(p_text, True, pygame.color.Color('white')), (200, 124)), (0, 0))
         else:
             super(Brick, self).__init__(p_bricks)
             self.image = pygame.image.load('Images/BrickLongRound.png')
@@ -255,7 +282,7 @@ while True:
             score_display = pygame.transform.scale(font.render(str(int(score)), False, WHITE),
                                                    (67 * len(str(int(score))), 120))
             question_display = pygame.transform.scale(font.render(question, False, WHITE),
-                                                      (67 * len(question), 120))
+                                                      (min(67 * len(question), playground_point_zero[0]), 120))
             screen.blit(question_display, (0, 0))
         playground.fill(WHITE)
         screen.blit(score_display, (screen.get_width() - score_display.get_width(), 0))
